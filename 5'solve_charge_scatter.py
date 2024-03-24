@@ -25,10 +25,9 @@ def solve_p(xy):
     return np.sum(pi)
 
 # 生成新坐标时排除和其他坐标一样的函数
-def randintxy_except(x, y, xy):
+def randintxy_except(xy, i):
     for _ in range(100):
-        a = random.randint(x, y)
-        b = random.randint(x, y)
+        a = random.randint(xy[i,0]-9, xy[i,0]+9); b = random.randint(xy[i,1]-9, xy[i,1]+9)
         if all((xy[n,0] != a or xy[n,1] != b) for n in range(amount)):
             return np.array([a, b])
     return np.array([0, 0])
@@ -38,7 +37,7 @@ def simulated_annealing(xy):
     current_p = solve_p(xy)
     new_xy = np.copy(xy)
     i = random.randint(0, amount-1)
-    new_xy[i,:] = randintxy_except(0, le, xy)
+    new_xy[i,:] = randintxy_except(xy, i )
     new_p = solve_p(new_xy)
     if new_p < current_p:
         xy = new_xy
