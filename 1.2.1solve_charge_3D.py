@@ -50,6 +50,11 @@ def simulated_annealing(xy):
     if new_p < current_p:
         xy = new_xy
         current_p = new_p
+    else:
+        p = random.random()
+        if p > np.exp(((current_p - new_p)/10000000000)):
+            xy = new_xy
+            current_p = new_p
     return xy, current_p
 
 #画图函数
@@ -66,20 +71,20 @@ def draw_3d(xy,i,t,pmin,le):
     fig.colorbar(sm, ax=ax, shrink=0.5, aspect=5)
 
     # 画图
-    ax.view_init(40, 330, 0)
+    ax.view_init(40, 60, 0)
     ax.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('')  # 隐藏z轴标题
     ax.set_zticks([])  # 隐藏z轴标签
     ax.set_title(f"location of charge, t={i+1} \n last loop:{t}s \n potential:{pmin}")
-    plt.savefig("C:/Users/13080/Desktop/Onedrive/CloudyLake Programming/Product/charge.png", dpi=300)
+    plt.savefig("C:/Users/admin/Onedrive/CloudyLake Programming/Product/charge.png", dpi=300)
     plt.close(fig)
 
 #主函数
 def main():
     global xy
-    for i in range(100000000000000000000000000000):
+    for i in range(10000000000):
         t1 = time.time()
         xy, pmin = simulated_annealing(xy)
         if (i+1)%n==0:
