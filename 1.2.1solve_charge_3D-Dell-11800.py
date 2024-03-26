@@ -33,15 +33,15 @@ def solve_p(xy):
 # 生成新坐标时排除和其他坐标一样的函数
 def randintxy_except(xy, i):
     for _ in range(100):
-        a = random.randint(0, le)
-        b = random.randint(0, le)
-        c = random.randint(0, le)
+        a = random.randint(xy[i,0]-le//20-1, xy[i,0]+le//20+1)
+        b = random.randint(xy[i,1]-le//20-1, xy[i,1]+le//20+1)
+        c = random.randint(xy[i,1]-le//20-1, xy[i,1]+le//20+1)
         if all(((xy[ii,0] != a or xy[ii,1] != b or xy[ii,2]!=c) and 0<=a<=le and 0<=b<=le and 0<=c<=le) for ii in range(amount)):
             return np.array([a, b, c])
     return np.array([xy[i,0], xy[i,1], xy[i,2]])
 
 # 模拟退火算法一次
-def simulated_annealing(xy,ii):
+def simulated_annealing(xy):
     current_p = solve_p(xy)
     new_xy = np.copy(xy)
     i = random.randint(0, amount-1)
@@ -50,11 +50,6 @@ def simulated_annealing(xy,ii):
     if new_p < current_p:
         xy = new_xy
         current_p = new_p
-    else:
-        p = random.random()
-        if p > np.exp(((current_p - new_p)/current_p*30000/(ii+1))):
-            xy = new_xy
-            current_p = new_p
     return xy, current_p
 
 #画图函数
@@ -71,7 +66,7 @@ def draw_3d(xy,i,t,pmin,le):
     fig.colorbar(sm, ax=ax, shrink=0.5, aspect=5)
 
     # 画图
-    ax.view_init(15, 60, 0)
+    ax.view_init(40, 60, 0)
     ax.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -84,9 +79,9 @@ def draw_3d(xy,i,t,pmin,le):
 #主函数
 def main():
     global xy
-    for i in range(30000):
+    for i in range(100000000000000000000000000000):
         t1 = time.time()
-        xy, pmin = simulated_annealing(xy,i)
+        xy, pmin = simulated_annealing(xy)
         if (i+1)%n==0:
             t2 = time.time()
             t=t2-t1
