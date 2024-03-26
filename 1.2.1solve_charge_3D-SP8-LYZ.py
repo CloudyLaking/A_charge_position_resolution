@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import time
+import datetime
 import random
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LinearSegmentedColormap
@@ -53,12 +53,13 @@ def simulated_annealing(xy):
     return xy, current_p
 
 #画图函数
-def draw_3d(xy,i,t,pmin,le):
-    fig = plt.figure(figsize=(6, 6))
+def draw_3d(xy,i,t,pmin):
     cm = plt.get_cmap("coolwarm")  # 色图
     # 画数据
+    fig = plt.figure()
     col = [cm(float(xy[i,2])/(le)) for i in range(amount)]
     ax = fig.add_subplot(111, projection='3d')
+
     # Generate colorbar
     norm = mpl.colors.Normalize(vmin=0, vmax=le)
     sm = mpl.cm.ScalarMappable(cmap=cm, norm=norm)
@@ -72,20 +73,23 @@ def draw_3d(xy,i,t,pmin,le):
     ax.set_ylabel('Y')
     ax.set_zlabel('')  # 隐藏z轴标题
     ax.set_zticks([])  # 隐藏z轴标签
-    ax.set_title(f"location of charge, t={i+1} \n last loop:{t}s \n potential:{pmin}")
-    plt.savefig("C:/Users/13080/Desktop/Onedrive/CloudyLake Programming/Product/charge.png", dpi=300)
-    plt.close(fig)
+    ax.set_title(f"location of charge, t={i}")
+    ax.set_title(f"last loop:{t}, potential:{pmin}")
+    plt.draw()
+    
 
 #主函数
 def main():
     global xy
     for i in range(100000000000000000000000000000):
-        t1 = time.time()
+        t1 = datetime.datetime.now()
         xy, pmin = simulated_annealing(xy)
         if (i+1)%n==0:
-            t2 = time.time()
+            t2 = datetime.datetime.now()
             t=t2-t1
-            t1 = time.time()
-            draw_3d(xy,i,t,pmin,le)
+            t1 = datetime.datetime.now()
+            draw_3d(xy,i,t,pmin)
+    plt.savefig("C:/Users/13080/Desktop/Onedrive/CloudyLake Programming/Product/charge.png")
+
 # 启动！
 main()
