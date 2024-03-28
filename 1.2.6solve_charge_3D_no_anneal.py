@@ -50,11 +50,6 @@ def simulated_annealing(xy,ii):
     if new_p < current_p:
         xy = new_xy
         current_p = new_p
-    else:
-        p = random.random()
-        if p > np.exp(((current_p - new_p)/current_p*100000/(ii+1))):
-            xy = new_xy
-            current_p = new_p
     return xy, current_p
 
 #画图函数
