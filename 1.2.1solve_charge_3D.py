@@ -52,13 +52,13 @@ def simulated_annealing(xy,ii):
         current_p = new_p
     else:
         p = random.random()
-        if p > np.exp(((current_p - new_p)/current_p*30000/(ii+1))):
+        if p > np.exp(((current_p - new_p)/current_p*100000/(ii+1))):
             xy = new_xy
             current_p = new_p
     return xy, current_p
 
 #画图函数
-def draw_3d(xy,i,t,pmin,le):
+def draw_3d(xy,i,t,pmin,le,n):
     fig = plt.figure(figsize=(6, 6))
     cm = plt.get_cmap("coolwarm")  # 色图
     # 画数据
@@ -75,22 +75,21 @@ def draw_3d(xy,i,t,pmin,le):
     ax.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
-    ax.set_zlabel('')  # 隐藏z轴标题
-    ax.set_zticks([])  # 隐藏z轴标签
-    ax.set_title(f"location of charge, t={i+1} \n last loop:{t}s \n potential:{pmin}")
+    ax.set_zlabel('Z')
+    ax.set_title(f"location of charge, t={i+1} \n last {n} times :{t}s \n potential:{pmin}")
     plt.savefig("C:/Users/admin/Onedrive/CloudyLake Programming/Product/charge.png", dpi=300)
     plt.close(fig)
 
 #主函数
 def main():
-    global xy
-    for i in range(30000):
-        t1 = time.time()
+    global xy,n
+    t1 = time.time()
+    for i in range(100000):
         xy, pmin = simulated_annealing(xy,i)
         if (i+1)%n==0:
             t2 = time.time()
             t=t2-t1
             t1 = time.time()
-            draw_3d(xy,i,t,pmin,le)
+            draw_3d(xy,i,t,pmin,le,n)
 # 启动！
 main()
