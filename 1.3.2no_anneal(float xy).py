@@ -8,7 +8,7 @@ from scipy.spatial import cKDTree
 from matplotlib.animation import FuncAnimation
 
 #退火方法3D网格中求解数个电荷电势最低分布
-#无取舍退火
+
 import matplotlib.pyplot as plt
 
 # 设置网格分辨率
@@ -58,36 +58,79 @@ def simulated_annealing(xy,ii):
 
 #画图函数
 def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
-    fig = plt.figure(figsize=(10, 5))
+    fig = plt.figure(figsize=(10, 10))
     cm = plt.get_cmap("coolwarm")  # 色图
 
     # First subplot for 3D plot
     col = [cm(float(xy[i,2])/(le)) for i in range(amount)]
-    ax = fig.add_subplot(121, projection='3d')  # Modify the subplot number to 121
+    ax1 = fig.add_subplot(221, projection='3d')  # Modify the subplot number to 221
     # Generate colorbar
     norm = mpl.colors.Normalize(vmin=0, vmax=le)
     sm = mpl.cm.ScalarMappable(cmap=cm, norm=norm)
     sm.set_array([])
-    fig.colorbar(sm, ax=ax, shrink=0.5, aspect=5)
+    fig.colorbar(sm, ax=ax1, shrink=0.5, aspect=5)
     #draw
-    ax.view_init(15, 60, 0)
-    ax.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True,s=2)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.set_title(f'Iteration: {i+1}   Last {n} times: {t:.2f}s')  # Add title and time
+    ax1.view_init(15, 60, 0)
+    ax1.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True,s=2)
+    ax1.set_xlabel('X')
+    ax1.set_ylabel('Y')
+    ax1.set_zlabel('Z')
+    ax1.set_title(f'Iteration with anneal: {i+1} \n  Last {n} times: {t:.2f}s \n  Charges: {amount}')  # Add title, time, and charges
 
     # Second subplot for potential plot
-    ax2 = fig.add_subplot(122)
+    ax2 = fig.add_subplot(222)
     ax2.plot(range(len(potentials)), potentials, lw=2)
     ax2.set_xlim(0, len(potentials))
     ax2.set_ylim(min(potentials), max(potentials))
     ax2.set_xlabel('Iteration')
     ax2.set_ylabel('Potential Energy')
     ax2.set_title('Potential Energy vs Iteration')
+    ax2.text(0.5, 0.9, f'Decrease: {last_pmin - pmin}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
+
+    # Third subplot for 2D plot
+    ax3 = fig.add_subplot(223, aspect='equal')  # Set aspect ratio to 'equal'
+    z_values = 0.1
+    delta = 0.05  # Adjust this value as needed
+    z_indices = np.where((xy[:, 2] >= z_values - delta) & (xy[:, 2] <= z_values + delta))[0]  # Select rows where z is in [z_values - delta, z_values + delta]
+    x_values = xy[z_indices, 0]
+    y_values = xy[z_indices, 1]
+
+    if x_values.size > 0 and y_values.size > 0:  # Check if x_values and y_values are not empty
+        x_min = np.min(x_values)
+        x_max = np.max(x_values)
+        y_min = np.min(y_values)
+        y_max = np.max(y_values)
+        ax3.scatter(x_values, y_values, c='orange')  # Convert col to a numpy array
+        ax3.set_xlabel('X')
+        ax3.set_ylabel('Y')
+        ax3.set_title(f'2D Slices at Z = {z_values}')
+        ax3.set_xlim(0, le)  # Set x-axis limits to 0 and le
+        ax3.set_ylim(0, le)  # Set y-axis limits to 0 and le
+        ax3.grid(True)
+        
+    # Fourth subplot for 2D plot
+    ax4 = fig.add_subplot(224, aspect='equal')  # Set aspect ratio to 'equal'
+    z_values = 0.5
+    delta = 0.05  # Adjust this value as needed
+    z_indices = np.where((xy[:, 2] >= z_values - delta) & (xy[:, 2] <= z_values + delta))[0]  # Select rows where z is in [z_values - delta, z_values + delta]
+    x_values = xy[z_indices, 0]
+    y_values = xy[z_indices, 1]
+
+    if x_values.size > 0 and y_values.size > 0:  # Check if x_values and y_values are not empty
+        x_min = np.min(x_values)
+        x_max = np.max(x_values)
+        y_min = np.min(y_values)
+        y_max = np.max(y_values)
+        ax4.scatter(x_values, y_values, c='orange')  # Convert col to a numpy array
+        ax4.set_xlabel('X')
+        ax4.set_ylabel('Y')
+        ax4.set_title(f'2D Slices at Z = {z_values}')
+        ax4.set_xlim(0, le)  # Set x-axis limits to 0 and le
+        ax4.set_ylim(0, le)  # Set y-axis limits to 0 and le
+        ax4.grid(True)
 
     plt.tight_layout()
-    plt.savefig(f"C:/Users/surface/Onedrive/CloudyLake Programming/Product/charge_anneal.png", dpi=300)
+    plt.savefig(f"C:/Users/surface/Onedrive/CloudyLake Programming/Product/charge_non_anneal.png", dpi=300)
     plt.close(fig)
 
 def main():
@@ -96,7 +139,7 @@ def main():
     last_pmin=0
     potentials = []
     p0=solve_p(xy)
-    for i in range(100000):
+    for i in range(1000000):
         xy, pmin = simulated_annealing(xy,i)
         potentials.append(pmin)
         if (i+1)%n==0:
@@ -106,6 +149,6 @@ def main():
             draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials)
             last_pmin=pmin
     print(xy)
-
+    print(pmin)
 # 启动！
 main()
