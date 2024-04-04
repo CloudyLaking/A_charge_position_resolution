@@ -42,8 +42,7 @@ def solve_p(xy):
 def select(xyxy):
     potentials = np.array([solve_p(xy) for xy in xyxy])
 
-    probabilities = 1 / potentials
-    probabilities /= np.sum(probabilities)
+    probabilities = potentials / np.sum(potentials)
     selected_indices = np.random.choice(len(xyxy), size=len(xyxy)//2, replace=False, p=probabilities)
     selected_xyxy = np.array([xyxy[i] for i in selected_indices])
     
