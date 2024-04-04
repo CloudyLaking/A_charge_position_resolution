@@ -5,11 +5,10 @@ import random
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.spatial import cKDTree
-from matplotlib.animation import FuncAnimation
+import matplotlib.pyplot as plt
 
 # 遗传算法中求解数个电荷电势最低分布
 
-import matplotlib.pyplot as plt
 
 # 设置网格分辨率
 le = 1
@@ -19,11 +18,15 @@ amount = int(input())
 # 多少次输出一次图像
 print("interval times?")
 n = int(input())
+#种群大小
+print("population size?")
+population= int(input())
 
-# 生成初坐标
-xy = np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le, amount), np.random.uniform(0, le, amount)))
+# 生成含population个初坐标组的数组
+xyxy = np.array([np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le, amount), np.random.uniform(0, le, amount))) for _ in range(100)])
 
-# 计算势能
+
+# 计算势能函数
 def solve_p(xy):
     # 构建 k-d 树
     tree = cKDTree(xy)
@@ -32,33 +35,42 @@ def solve_p(xy):
     # 第一个返回的邻居是点自身，所以我们取第二个
     distances = distances[:, 1]
     # 计算势能并求和
-    potentials = np.sum(1.0 / distances)
-    return potentials
+    potential = np.sum(1.0 / distances)
+    return potential
 
-# 生成新坐标时排除和其他坐标一样的函数
-def randintxy_except(xy, i):
-    for _ in range(100):
-        a = np.random.uniform(0, le)
-        b = np.random.uniform(0, le)
-        c = np.random.uniform(0, le)
-        if all(((xy[ii, 0] != a or xy[ii, 1] != b or xy[ii, 2] != c) and 0 <= a <= le and 0 <= b <= le and 0 <= c <= le) for ii in range(amount)):
-            return np.array([a, b, c])
-    return np.array([xy[i, 0], xy[i, 1], xy[i, 2]])
+# 选择，并且返回这一大组里面最好的一组坐标的函数
+def select(xyxy):
+    potentials = np.array([solve_p(xy) for xy in xyxy])
 
-# 遗传算法一次
-def genetic_algorithm(xy, ii):
-    current_p = solve_p(xy)
-    new_xy = np.copy(xy)
-    i = random.randint(0, amount - 1)
-    new_xy[i, :] = randintxy_except(xy, i)
-    new_p = solve_p(new_xy)
-    if new_p < current_p:
-        xy = new_xy
-        current_p = new_p
-    return xy, current_p
+    probabilities = potentials / np.sum(potentials)
+    selected_indices = np.random.choice(len(xyxy), size=len(xyxy)//2, replace=False, p=probabilities)
+    selected_xyxy = np.array([xyxy[i] for i in selected_indices])
+    
+    # Generate new xyxy based on selected xyxy as seed
+    new_xyxy = np.array([np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le, amount), np.random.uniform(0, le, amount))) for _ in range(len(selected_xyxy))])
+    
+    # Combine selected xyxy and new xyxy
+    combined_xyxy = np.concatenate((selected_xyxy, new_xyxy))
+    
+    return combined_xyxy, np.average(potentials)
+
+# 交叉操作函数
+def crossover(xy1, xy2):
+    i = random.randint(0, len(xy1)-1)
+    new_xy1 = np.concatenate((xy1[:i], xy2[i:]))
+    new_xy2 = np.concatenate((xy2[:i], xy1[i:]))
+    return new_xy1, new_xy2
+
+# 变异操作函数
+def mutation(xy):
+    i = random.randint(0, len(xy)-1)
+    xy[i] = np.array(np.random.uniform(0, le, 3))
+    return xy
+
+# 遗传算法
 
 # 画图函数
-def draw_2d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials):
+def draw_3d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials):
     fig = plt.figure(figsize=(10, 10))
     cm = plt.get_cmap("coolwarm")  # 色图
 
@@ -135,21 +147,26 @@ def draw_2d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials):
     plt.close(fig)
 
 def main():
-    global xy, n
+    global xyxy, n
     t1 = time.time()
     last_pmin = 0
-    potentials = []
-    p0 = solve_p(xy)
-    for i in range(1000000):
-        xy, pmin = genetic_algorithm(xy, i)
-        potentials.append(pmin)
+    potentials = np.array([])
+    p0 = solve_p(xyxy[0])
+    for i in range(100000):
+        xyxy,pmin= select(xyxy)
+        for i1 in range(0, len(xyxy)-1, 2):
+            xyxy[i1],xyxy[i1+1] = crossover(xyxy[i1], xyxy[i1+1])
+        for i2 in range(len(xyxy)):
+            if random.random() < 0.1:  # 10%的变异率   
+                xyxy[i2] = mutation(xyxy[i2]) 
+        potentials = np.append(potentials, pmin)
         if (i + 1) % n == 0:
             t2 = time.time()
             t = t2 - t1
             t1 = time.time()
-            draw_2d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials)
+            draw_3d(xyxy[0], i, t, pmin, last_pmin, p0, le, n, amount, potentials)
             last_pmin = pmin
-    print(xy)
+    print(xyxy[0])
     print(pmin)
 
 # 启动！
