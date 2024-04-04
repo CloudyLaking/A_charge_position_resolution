@@ -1,17 +1,18 @@
-#退火方法3D网格中求解数个电荷电势最低分布
-
 import numpy as np
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import time
 import random
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.spatial import cKDTree
+from matplotlib.animation import FuncAnimation
+
+#退火方法3D网格中求解数个电荷电势最低分布
+
+import matplotlib.pyplot as plt
 
 # 设置网格分辨率
-print("dpi=?*?")
-le = int(input())
+le=1
 #电荷数
 print("charges amount?")
 amount = int(input())
@@ -25,7 +26,7 @@ xy = np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le,
 def solve_p(xy):
     # 构建 k-d 树
     tree = cKDTree(xy)
-    # 查询树以找到每个点的最近邻居s
+    # 查询树以找到每个点的最近邻居
     distances, indices = tree.query(xy, k=2)
     # 第一个返回的邻居是点自身，所以我们取第二个
     distances = distances[:, 1]
@@ -61,41 +62,55 @@ def simulated_annealing(xy,ii):
     return xy, current_p
 
 #画图函数
-def draw_3d(xy,i,t,pmin,last_pmin,le,n,amount):
-    fig = plt.figure(figsize=(6, 6))
+def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
+    fig = plt.figure(figsize=(10, 5))
     cm = plt.get_cmap("coolwarm")  # 色图
-    # 画数据
+
+    # First subplot for 3D plot
     col = [cm(float(xy[i,2])/(le)) for i in range(amount)]
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(121, projection='3d')  # Modify the subplot number to 121
     # Generate colorbar
     norm = mpl.colors.Normalize(vmin=0, vmax=le)
     sm = mpl.cm.ScalarMappable(cmap=cm, norm=norm)
     sm.set_array([])
     fig.colorbar(sm, ax=ax, shrink=0.5, aspect=5)
-
-    # 画图
+    #draw
     ax.view_init(15, 60, 0)
-    ax.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True)
+    ax.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True,s=2)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    ax.set_title(f"location of {amount} charges, t={i+1} \n last {n} times :{t}s \n potential:{pmin} \n last potential:{last_pmin}")
-    plt.savefig("C:/Users/surface/Onedrive/CloudyLake Programming/Product/charge_anneal.png", dpi=300)
+    ax.set_title(f'Iteration: {i+1}   Last {n} times: {t:.2f}s')  # Add title and time
+
+    # Second subplot for potential plot
+    ax2 = fig.add_subplot(122)
+    ax2.plot(range(len(potentials)), potentials, lw=2)
+    ax2.set_xlim(0, len(potentials))
+    ax2.set_ylim(min(potentials), max(potentials))
+    ax2.set_xlabel('Iteration')
+    ax2.set_ylabel('Potential Energy')
+    ax2.set_title('Potential Energy vs Iteration')
+
+    plt.tight_layout()
+    plt.savefig(f"C:/Users/surface/Onedrive/CloudyLake Programming/Product/charge_anneal.png", dpi=300)
     plt.close(fig)
 
-#主函数
 def main():
     global xy,n
     t1 = time.time()
     last_pmin=0
+    potentials = []
+    p0=solve_p(xy)
     for i in range(100000):
         xy, pmin = simulated_annealing(xy,i)
+        potentials.append(pmin)
         if (i+1)%n==0:
             t2 = time.time()
             t=t2-t1
             t1 = time.time()
-            draw_3d(xy,i,t,pmin,last_pmin,le,n,amount)
+            draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials)
             last_pmin=pmin
     print(xy)
+
 # 启动！
 main()
