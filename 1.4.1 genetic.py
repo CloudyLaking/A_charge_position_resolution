@@ -7,18 +7,19 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.spatial import cKDTree
 from matplotlib.animation import FuncAnimation
 
-#退火方法3D网格中求解数个电荷电势最低分布
+# 遗传算法中求解数个电荷电势最低分布
 
 import matplotlib.pyplot as plt
 
 # 设置网格分辨率
-le=1
-#电荷数
+le = 1
+# 电荷数
 print("charges amount?")
 amount = int(input())
-#多少次输出一次图像
+# 多少次输出一次图像
 print("interval times?")
 n = int(input())
+
 # 生成初坐标
 xy = np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le, amount), np.random.uniform(0, le, amount)))
 
@@ -40,42 +41,42 @@ def randintxy_except(xy, i):
         a = np.random.uniform(0, le)
         b = np.random.uniform(0, le)
         c = np.random.uniform(0, le)
-        if all(((xy[ii,0] != a or xy[ii,1] != b or xy[ii,2]!=c) and 0<=a<=le and 0<=b<=le and 0<=c<=le) for ii in range(amount)):
+        if all(((xy[ii, 0] != a or xy[ii, 1] != b or xy[ii, 2] != c) and 0 <= a <= le and 0 <= b <= le and 0 <= c <= le) for ii in range(amount)):
             return np.array([a, b, c])
-    return np.array([xy[i,0], xy[i,1], xy[i,2]])
+    return np.array([xy[i, 0], xy[i, 1], xy[i, 2]])
 
-# 模拟退火算法一次
-def simulated_annealing(xy,ii):
+# 遗传算法一次
+def genetic_algorithm(xy, ii):
     current_p = solve_p(xy)
     new_xy = np.copy(xy)
-    i = random.randint(0, amount-1)
-    new_xy[i,:] = randintxy_except(xy, i )
+    i = random.randint(0, amount - 1)
+    new_xy[i, :] = randintxy_except(xy, i)
     new_p = solve_p(new_xy)
     if new_p < current_p:
         xy = new_xy
         current_p = new_p
     return xy, current_p
 
-#画图函数
-def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
+# 画图函数
+def draw_2d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials):
     fig = plt.figure(figsize=(10, 10))
     cm = plt.get_cmap("coolwarm")  # 色图
 
     # First subplot for 3D plot
-    col = [cm(float(xy[i,2])/(le)) for i in range(amount)]
-    ax1 = fig.add_subplot(221, projection='3d')  # Modify the subplot number to 221
+    col = [cm(float(xy[i, 2]) / (le)) for i in range(amount)]
+    ax1 = fig.add_subplot(221, projection='3d')  # Modify the subplot number to 223
     # Generate colorbar
     norm = mpl.colors.Normalize(vmin=0, vmax=le)
     sm = mpl.cm.ScalarMappable(cmap=cm, norm=norm)
     sm.set_array([])
     fig.colorbar(sm, ax=ax1, shrink=0.5, aspect=5)
-    #draw
+    # draw
     ax1.view_init(15, 60, 0)
-    ax1.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True,s=2)
+    ax1.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True, s=2)
     ax1.set_xlabel('X')
     ax1.set_ylabel('Y')
     ax1.set_zlabel('Z')
-    ax1.set_title(f'Iteration with anneal: {i+1} \n  Last {n} times: {t:.2f}s \n  Charges: {amount}')  # Add title, time, and charges
+    ax1.set_title(f'Iteration with genetic algorithm: {i + 1} \n  Last {n} times: {t:.2f}s \n  Charges: {amount}')  # Add title, time, and charges
 
     # Second subplot for potential plot
     ax2 = fig.add_subplot(222)
@@ -130,24 +131,24 @@ def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
         ax4.grid(True)
 
     plt.tight_layout()
-    plt.savefig(f"C:/Users/surface/Onedrive/CloudyLake Programming/Product/charge_non_anneal.png", dpi=300)
+    plt.savefig(f"C:/Users/surface/Onedrive/CloudyLake Programming/Product/charge_genetic.png", dpi=300)
     plt.close(fig)
 
 def main():
-    global xy,n
+    global xy, n
     t1 = time.time()
-    last_pmin=0
+    last_pmin = 0
     potentials = []
-    p0=solve_p(xy)
+    p0 = solve_p(xy)
     for i in range(1000000):
-        xy, pmin = simulated_annealing(xy,i)
+        xy, pmin = genetic_algorithm(xy, i)
         potentials.append(pmin)
-        if (i+1)%n==0:
+        if (i + 1) % n == 0:
             t2 = time.time()
-            t=t2-t1
+            t = t2 - t1
             t1 = time.time()
-            draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials)
-            last_pmin=pmin
+            draw_2d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials)
+            last_pmin = pmin
     print(xy)
     print(pmin)
 
