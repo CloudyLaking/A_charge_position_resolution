@@ -82,7 +82,11 @@ def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
     ax2.set_xlabel('Iteration')
     ax2.set_ylabel('Potential Energy')
     ax2.set_title('Potential Energy vs Iteration')
-    ax2.text(0.5, 0.9, f'Decrease: {last_pmin - pmin}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
+    ax2.text(0.5, 0.9, f'Decrease: {last_pmin - pmin}\n present potential:{pmin}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
+    # Add data labels to the potential plot
+    for i, potential in enumerate(potentials):
+        if (i+1) % n == 0:
+            ax2.annotate(f'{potential:.2f}', (i, potential), textcoords="offset points", xytext=(0,10), ha='center')
 
     # Third subplot for 2D plot
     ax3 = fig.add_subplot(223, aspect='equal')  # Set aspect ratio to 'equal'

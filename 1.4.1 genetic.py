@@ -19,8 +19,7 @@ amount = int(input())
 print("interval times?")
 n = int(input())
 #种群大小
-print("population size?")
-population= int(input())
+population=4
 
 # 生成含population个初坐标组的数组
 xyxy = np.array([np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le, amount), np.random.uniform(0, le, amount))) for _ in range(100)])
@@ -35,7 +34,7 @@ def solve_p(xyxy):
     # 计算倒数之和
     return np.sum(1.0 / distances)
 
-# 选择，并且返回这一大组里面最好的一组坐标的函数
+# 选择并且繁衍的函数
 def select(xyxy):
     potentials = np.array([solve_p(xy) for xy in xyxy])
 
@@ -45,8 +44,8 @@ def select(xyxy):
     selected_xyxy = np.array([xyxy[i] for i in selected_indices])
     
     # Generate new xyxy based on selected xyxy as seed
-    new_xyxy = np.array([np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le, amount), np.random.uniform(0, le, amount))) for _ in range(len(selected_xyxy))])
-    
+    new_xyxy = np.array([np.column_stack((np.clip(np.random.normal(selected_xyxy[i][:, 0], le/100), 0, le), np.clip(np.random.normal(selected_xyxy[i][:, 1], le/100), 0, le), np.clip(np.random.normal(selected_xyxy[i][:, 2], le/100), 0, le))) for i in range(len(selected_xyxy))])
+
     # Combine selected xyxy and new xyxy
     combined_xyxy = np.concatenate((selected_xyxy, new_xyxy))
     
@@ -73,20 +72,20 @@ def draw_3d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials):
     cm = plt.get_cmap("coolwarm")  # 色图
 
     # First subplot for 3D plot
-    col = [cm(float(xy[i, 2]) / (le)) for i in range(amount)]
-    ax1 = fig.add_subplot(221, projection='3d')  # Modify the subplot number to 223
+    col = [cm(float(xy[i,2])/(le)) for i in range(amount)]
+    ax1 = fig.add_subplot(221, projection='3d')  # Modify the subplot number to 221
     # Generate colorbar
     norm = mpl.colors.Normalize(vmin=0, vmax=le)
     sm = mpl.cm.ScalarMappable(cmap=cm, norm=norm)
     sm.set_array([])
     fig.colorbar(sm, ax=ax1, shrink=0.5, aspect=5)
-    # draw
+    #draw
     ax1.view_init(15, 60, 0)
-    ax1.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True, s=2)
+    ax1.scatter(xy[:, 0], xy[:, 1], xy[:, 2], c=col, depthshade=True,s=2)
     ax1.set_xlabel('X')
     ax1.set_ylabel('Y')
     ax1.set_zlabel('Z')
-    ax1.set_title(f'Iteration with genetic algorithm: {i + 1} \n  Last {n} times: {t:.2f}s \n  Charges: {amount}')  # Add title, time, and charges
+    ax1.set_title(f'Iteration without anneal: {i+1} \n  Last {n} times: {t:.2f}s \n  Charges: {amount}')  # Add title, time, and charges
 
     # Second subplot for potential plot
     ax2 = fig.add_subplot(222)
@@ -96,7 +95,11 @@ def draw_3d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials):
     ax2.set_xlabel('Iteration')
     ax2.set_ylabel('Potential Energy')
     ax2.set_title('Potential Energy vs Iteration')
-    ax2.text(0.5, 0.9, f'Decrease: {last_pmin - pmin}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
+    ax2.text(0.5, 0.9, f'Decrease: {last_pmin - pmin}\n present potential:{pmin}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
+    # Add data labels to the potential plot
+    for i, potential in enumerate(potentials):
+        if (i+1) % n == 0:
+            ax2.annotate(f'{potential:.2f}', (i, potential), textcoords="offset points", xytext=(0,10), ha='center')
 
     # Third subplot for 2D plot
     ax3 = fig.add_subplot(223, aspect='equal')  # Set aspect ratio to 'equal'

@@ -43,7 +43,23 @@ def generate(xyxy):
                     if new_p < current_p:
                         xyxy1 = np.copy(xyxy)
                         current_p = new_p
-    p_average = current_p/ np.square(len(xyxy0))
+
+    # Use binary search to refine the resolution
+    for i in range(3):
+        for j in range(2):
+            for k in range(2):
+                x = (xyxy0[0, 0] + xyxy1[0, 0]) // 2 + j * (xyxy1[0, 0] - xyxy0[0, 0]) // 4
+                y = (xyxy0[0, 1] + xyxy1[0, 1]) // 2 + k * (xyxy1[0, 1] - xyxy0[0, 1]) // 4
+                z = (xyxy0[0, 2] + xyxy1[0, 2]) // 2 + i * (xyxy1[0, 2] - xyxy0[0, 2]) // 4
+                if all(((xyxy[ii, 0] != x or xyxy[ii, 1] != y or xyxy[ii, 2] != z)) for ii in range(len(xyxy))):
+                    xy = np.array([x, y, z])
+                    xyxy = np.vstack((xyxy0, xy))
+                    new_p = solve_p(xyxy)
+                    if new_p < current_p:
+                        xyxy1 = np.copy(xyxy)
+                        current_p = new_p
+
+    p_average = current_p / np.square(len(xyxy0))
     return xyxy1, p_average
 
 #画图函数
@@ -75,8 +91,7 @@ def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
     ax2.set_xlabel('Iteration')
     ax2.set_ylabel('Average Potential Energy')
     ax2.set_title('Average Potential Energy vs Iteration (p/i^2)')
-    ax2.text(0.5, 0.9, f'Decrease: {(last_pmin - pmin)}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
-
+    ax2.text(0.5, 0.9, f'Decrease: {last_pmin - pmin}\n present potential:{pmin}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
     # Third subplot for 2D plot
     ax3 = fig.add_subplot(223, aspect='equal')  # Set aspect ratio to 'equal'
     z_values = 0.01*le
@@ -131,7 +146,8 @@ def main():
             draw_3d(xyxy,i,t,pmin,last_pmin,p0,le,n,amount,average_potentials)
             last_pmin=pmin
     print(xyxy)
-    print(pmin)
+    print(average_potentials,pmin)
+    print("total potential:",pmin*amount)
 
 # 启动！
 main()
