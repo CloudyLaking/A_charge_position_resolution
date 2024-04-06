@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import time
 import random
 from mpl_toolkits.mplot3d import Axes3D
@@ -7,9 +8,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.spatial import cKDTree
 from matplotlib.animation import FuncAnimation
 
-#退火方法3D网格中求解数个电荷电势最低分布
-
-import matplotlib.pyplot as plt
+#用逐个生成的方法模拟放置电荷寻求最低分布
 
 # 设置网格分辨率
 le=int(input("resolution?"))
@@ -26,32 +25,29 @@ def solve_p(xyxy):
     distances = np.linalg.norm(xyxy[:, np.newaxis] - xyxy, axis=2)
     # 将对角线上的元素设置为无穷大，以排除自距离
     np.fill_diagonal(distances, np.inf)
-    # 计算距离的倒数，将无穷大替换为0
-    inverse_distances = 1.0 / np.where(distances == 0, np.inf, distances)
     # 计算倒数之和
-    return np.sum(inverse_distances)
+    return np.sum(1.0 / distances)
 
 
 # 严格生成取舍算法一次的函数
 def generate(xyxy):
-    xyxy0=np.copy(xyxy)#存档初位置
+    xyxy0 = np.copy(xyxy)  # 存档初位置
     current_p = float('inf')
-    for x in range(le+1):
-        for y in range(le+1):
-            for z in range(le+1):
-                if all(((xyxy[ii,0] != x or xyxy[ii,1] != y or xyxy[ii,2]!=z)) for ii in range(len(xyxy))):
-                    xy = np.array([x,y,z])
+    for x in range(le + 1):
+        for y in range(le + 1):
+            for z in range(le + 1):
+                if all(((xyxy[ii, 0] != x or xyxy[ii, 1] != y or xyxy[ii, 2] != z)) for ii in range(len(xyxy))):
+                    xy = np.array([x, y, z])
                     xyxy = np.vstack((xyxy0, xy))
                     new_p = solve_p(xyxy)
-                    if new_p <current_p:
-                        xyxy1 =np.copy(xyxy)
+                    if new_p < current_p:
+                        xyxy1 = np.copy(xyxy)
                         current_p = new_p
-    p_average = current_p/len(xyxy0)
+    p_average = current_p/ np.square(len(xyxy0))
     return xyxy1, p_average
 
 #画图函数
 def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
-    print("draw_3d function started") 
     fig = plt.figure(figsize=(10, 10))
     cm = plt.get_cmap("coolwarm")  # 色图
 
@@ -78,8 +74,8 @@ def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
     ax2.set_ylim(min(potentials), max(potentials))
     ax2.set_xlabel('Iteration')
     ax2.set_ylabel('Average Potential Energy')
-    ax2.set_title('Average Potential Energy vs Iteration')
-    ax2.text(0.5, 0.9, f'Decrease: {last_pmin - pmin}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
+    ax2.set_title('Average Potential Energy vs Iteration (p/i^2)')
+    ax2.text(0.5, 0.9, f'Decrease: {(last_pmin - pmin)}', transform=ax2.transAxes, ha='center')  # Add text for decrease in potential energy
 
     # Third subplot for 2D plot
     ax3 = fig.add_subplot(223, aspect='equal')  # Set aspect ratio to 'equal'
@@ -119,7 +115,6 @@ def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
     plt.savefig(f"C:/Users/surface/Onedrive/CloudyLake Programming/Product/charge_generator.png", dpi=300)
     plt.close(fig)
 
-    print("draw_3d function finished") 
 def main():
     global xyxy,n
     t1 = time.time()
@@ -135,7 +130,7 @@ def main():
             t1 = time.time()
             draw_3d(xyxy,i,t,pmin,last_pmin,p0,le,n,amount,average_potentials)
             last_pmin=pmin
-            print(xyxy)
+    print(xyxy)
     print(pmin)
 
 # 启动！

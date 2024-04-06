@@ -27,16 +27,13 @@ xyxy = np.array([np.column_stack((np.random.uniform(0, le, amount), np.random.un
 
 
 # 计算势能函数
-def solve_p(xy):
-    # 构建 k-d 树
-    tree = cKDTree(xy)
-    # 查询树以找到每个点的最近邻居
-    distances, indices = tree.query(xy, k=2)
-    # 第一个返回的邻居是点自身，所以我们取第二个
-    distances = distances[:, 1]
-    # 计算势能并求和
-    potential = np.sum(1.0 / distances)
-    return potential
+def solve_p(xyxy):
+    # 计算点对之间的距离
+    distances = np.linalg.norm(xyxy[:, np.newaxis] - xyxy, axis=2)
+    # 将对角线上的元素设置为无穷大，以排除自距离
+    np.fill_diagonal(distances, np.inf)
+    # 计算倒数之和
+    return np.sum(1.0 / distances)
 
 # 选择，并且返回这一大组里面最好的一组坐标的函数
 def select(xyxy):
@@ -103,42 +100,34 @@ def draw_3d(xy, i, t, pmin, last_pmin, p0, le, n, amount, potentials):
 
     # Third subplot for 2D plot
     ax3 = fig.add_subplot(223, aspect='equal')  # Set aspect ratio to 'equal'
-    z_values = 0.05
-    delta = 0.05  # Adjust this value as needed
+    z_values = 0.01*le
+    delta = 0.01*le  # Adjust this value as needed
     z_indices = np.where((xy[:, 2] >= z_values - delta) & (xy[:, 2] <= z_values + delta))[0]  # Select rows where z is in [z_values - delta, z_values + delta]
     x_values = xy[z_indices, 0]
     y_values = xy[z_indices, 1]
 
     if x_values.size > 0 and y_values.size > 0:  # Check if x_values and y_values are not empty
-        x_min = np.min(x_values)
-        x_max = np.max(x_values)
-        y_min = np.min(y_values)
-        y_max = np.max(y_values)
-        ax3.scatter(x_values, y_values, c='orange',s=2)  # Convert col to a numpy array
+        ax3.scatter(x_values, y_values, c='orange')  # Convert col to a numpy array
         ax3.set_xlabel('X')
         ax3.set_ylabel('Y')
-        ax3.set_title(f'2D Slices at Z = {z_values} \n  Points: {len(x_values)}')  # Add title with number of points
+        ax3.set_title(f'2D Slices at Z = {z_values-delta, z_values+delta} \n  Points: {len(x_values)}')
         ax3.set_xlim(0, le)  # Set x-axis limits to 0 and le
         ax3.set_ylim(0, le)  # Set y-axis limits to 0 and le
         ax3.grid(True)
-
+        
     # Fourth subplot for 2D plot
     ax4 = fig.add_subplot(224, aspect='equal')  # Set aspect ratio to 'equal'
-    z_values = 0.5
-    delta = 0.05  # Adjust this value as needed
+    z_values = 0.5*le
+    delta = 0.01*le  # Adjust this value as needed
     z_indices = np.where((xy[:, 2] >= z_values - delta) & (xy[:, 2] <= z_values + delta))[0]  # Select rows where z is in [z_values - delta, z_values + delta]
     x_values = xy[z_indices, 0]
     y_values = xy[z_indices, 1]
 
     if x_values.size > 0 and y_values.size > 0:  # Check if x_values and y_values are not empty
-        x_min = np.min(x_values)
-        x_max = np.max(x_values)
-        y_min = np.min(y_values)
-        y_max = np.max(y_values)
-        ax4.scatter(x_values, y_values, c='orange',s=2)  # Convert col to a numpy array
+        ax4.scatter(x_values, y_values, c='orange')  # Convert col to a numpy array
         ax4.set_xlabel('X')
         ax4.set_ylabel('Y')
-        ax4.set_title(f'2D Slices at Z = {z_values} \n  Points: {len(x_values)}')  # Add title with number of points
+        ax4.set_title(f'2D Slices at Z = {z_values-delta, z_values+delta} \n  Points: {len(x_values)}')
         ax4.set_xlim(0, le)  # Set x-axis limits to 0 and le
         ax4.set_ylim(0, le)  # Set y-axis limits to 0 and le
         ax4.grid(True)
