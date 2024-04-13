@@ -37,7 +37,7 @@ def randintxy_except(xy, i):
         a = np.random.uniform(0, le)
         b = np.random.uniform(0, le)
         c = np.random.uniform(0, le)
-        if all(((xy[ii,0] != a or xy[ii,1] != b or xy[ii,2]!=c) and 0<=a<=le and 0<=b<=le and 0<=c<=le) for ii in range(amount)):
+        if all(((xy[ii,0] != a or xy[ii,1] != b or xy[ii,2]!=c)) for ii in range(amount)):
             return np.array([a, b, c])
     return np.array([xy[i,0], xy[i,1], xy[i,2]])
 

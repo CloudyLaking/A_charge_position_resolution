@@ -9,15 +9,18 @@ from scipy.spatial import cKDTree
 from matplotlib.animation import FuncAnimation
 
 ##退火方法3D网格中求解数个电荷电势最低分布##
-
-# 设置网格分辨率
-le=1
-#电荷数
-print("charges amount?")
-amount = int(input())
-#多少次输出一次图像
-print("interval times?")
-n = int(input())
+def origin():
+    # 设置网格分辨率
+    le = 1
+    # 电荷数
+    print("charges amount?")
+    amount = int(input())
+    # 多少次输出一次图像
+    print("interval times?")
+    n = int(input())
+    # 生成初坐标
+    xy = np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le, amount), np.random.uniform(0, le, amount)))
+    return le,amount,n,xy
 
 #定义导体的3D图形范围电荷随机生成函数
 
@@ -31,38 +34,34 @@ def solve_p(xyxy):
     # 计算倒数之和
     return np.sum(1.0 / distances)
 
-# 随机生成新坐标时排除和其他坐标一样的函数
-def renew(xy, n=1):
-    i = random.randint(0, amount-1)
-    new_coords = []
+# 生成新坐标的函数
+def randintxyz_except(le, xyz, i):
+    lenxyz=len(xyz)
+    for _ in range(100):
+        a = np.clip(np.random.normal(xyz[i, 0], 0.3), 0, le)
+        b = np.clip(np.random.normal(xyz[i, 1], 0.3), 0, le)
+        c = np.clip(np.random.normal(xyz[i, 2], 0.3), 0, le)
+        if all(((xyz[ii,0] != a or xyz[ii,1] != b or xyz[ii,2]!=c))\
+        for ii in range(lenxyz)):
+            return np.array([a, b, c])
+    return np.array([xyz[i,0], xyz[i,1], xyz[i,2]])
+
+# 模拟退火算法一次
+def simulated_annealing(le,xyz,ii,current_p):
+    #新坐标组
+    #更新n次
+    n=10
     for _ in range(n):
-        for _ in range(100):
-            a = np.random.uniform(0, le)
-            b = np.random.uniform(0, le)
-            c = np.random.uniform(0, le)
-            if all(((xy[ii,0] != a or xy[ii,1] != b or xy[ii,2]!=c) and 0<=a<=le and 0<=b<=le and 0<=c<=le) for ii in range(len(xy))):
-                xy[i,:] = np.array([a, b, c])
-                break
-        else:
-            xy[i,:] = np.array([xy[i,0], xy[i,1], xy[i,2]])
-    return xy
-
-# 模拟退火算法一次  
-def simulated_annealing(xy,ii):
-    current_p = solve_p(xy)
-    new_xy = np.copy(xy)
-    new_xy = renew(xy,n=1)
-    new_p = solve_p(new_xy)
+        new_xyz = np.copy(xyz)
+        i = random.randint(0, len(xyz)-1)
+        new_xyz[i,:] = randintxyz_except(le,xyz, i )
+    #算新势能
+    new_p = solve_p(new_xyz)
+    #蒙特卡洛判决
     if new_p < current_p:
-        xy = new_xy
-        current_p = new_p
-    else:
-        p = random.random()
-        if p > np.exp(((current_p - new_p)/current_p*100000/(ii+1))):
-            xy = new_xy
-            current_p = new_p
-    return xy, current_p
-
+        return new_xyz, new_p
+    return xyz, current_p
+    
 #画图函数
 def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
     fig = plt.figure(figsize=(10, 10))
@@ -130,25 +129,23 @@ def draw_3d(xy,i,t,pmin,last_pmin,p0,le,n,amount,potentials):
         ax4.grid(True)
 
     plt.tight_layout()
-    plt.savefig(f"C:/Users/surface/Onedrive/CloudyLake Programming/Product/charge_anneal.png", dpi=300)
+    plt.savefig(f"C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Product/charge_anneal.png", dpi=300)
     plt.close(fig)
 
 def main():
-    #大参数
-    global n,amount,le
-    # 生成初坐标
-    xy = np.array([[]])
-    xy = np.column_stack((np.random.uniform(0, le, amount), np.random.uniform(0, le, amount), np.random.uniform(0, le, amount)))
-    #计时
-    t1 = time.perf_counter()
+    #获取初始参数
+    le,amount,n,xy=origin()
     #初始化
-    last_pmin=0
     potentials = []
     p0=solve_p(xy)
+    last_pmin=p0
+    pmin=p0
+    #计时
+    t1 = time.perf_counter()
     #循环
     for i in range(100000):
         #循环动作
-        xy, pmin = simulated_annealing(xy,i)
+        xy, pmin = simulated_annealing(le,xy,i,pmin)
         potentials.append(pmin)
         #隔段画图
         if (i+1)%n==0:

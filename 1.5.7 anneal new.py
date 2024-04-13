@@ -52,7 +52,8 @@ def simulated_annealing(xy,ii):
     if delta_p > current_p/1000 or delta_p>500:  # 防止溢出
         accept_prob = 1.0
     else:
-        accept_prob = np.exp(delta_p / 1.0)
+        accept_prob = np.exp(delta_p / current_p)
+    print(accept_prob)
     if np.random.uniform(0, 1) < accept_prob:
         xy = new_xy
         current_p = new_p
