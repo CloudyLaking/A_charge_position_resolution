@@ -18,16 +18,20 @@ def origin():
     le= 1
     a=0.5
     b=0.5
-    c=0.1
-    abc=[a,b,c]
+    c=0.0
+
     # 电荷数
     print("charges amount?")
     amount = int(input())
     # 多少次输出一次图像
     print("interval times?")
     n = int(input())
+    #每次测量几次
+    times=int(input('measurement times?'))
+    #分成多少组数据
+    datatimes=int(input('data times?'))
     #返回
-    return le,amount,n,abc
+    return le,amount,n,a,b,c,times,datatimes
 
 
 # 计算势能
@@ -48,27 +52,19 @@ def curvature(a, b, c):
     return np.square(c) / np.multiply(np.square(a) ,np.square(b))
 
 # 范围内正态生成一个新坐标的函数
-def randintxyz_except(le, xyz, i, abc):
+def randintxyz_except(le, xyz, i, a0,b0,c0):
     lenxyz=len(xyz)
-    a0=abc[0]
-    b0=abc[1]
-    c0=abc[2]
     for _ in range(100):
-        a = np.clip(np.random.normal(xyz[i, 0], 0.3), -a0, a0)
-        b = np.clip(np.random.normal(xyz[i, 1], 0.3), -b0, b0)
-        c = np.clip(np.random.normal(xyz[i, 2], 0.3), -c0, c0)
-        if all(((xyz[ii,0] != a or xyz[ii,1] != b or xyz[ii,2]!=c))\
-        for ii in range(lenxyz))\
-        and isin([a,b,c],a0,b0,c0):
+        a = np.clip(np.random.normal(xyz[i, 0], 0.2), -a0, a0)
+        b = np.clip(np.random.normal(xyz[i, 1], 0.2), -b0, b0)
+        c = np.clip(np.random.normal(xyz[i, 2], 0.2), -c0, c0)
+        if isin([a,b,c],a0,b0,c0):
             return np.array([a, b, c])
     return np.array([xyz[i,0], xyz[i,1], xyz[i,2]])
 
 #随机生成一个范围内新坐标的函数
-def randintxyz_generate(le, xyz, abc):
+def randintxyz_generate(le, xyz, a0,b0,c0):
     lenxyz=len(xyz)
-    a0=abc[0]
-    b0=abc[1]
-    c0=abc[2]
     for _ in range(100):
         a = np.random.uniform(-a0, a0)
         b = np.random.uniform(-b0, b0)
@@ -78,13 +74,13 @@ def randintxyz_generate(le, xyz, abc):
     return np.array([0,0,0]) #为了防止出错还是弄了一个  
 
 # 模拟退火算法一次
-def simulated_annealing(le,xyz,ii,current_p,abc):
+def simulated_annealing(le,amount,xyz,ii,current_p,a,b,c):
     #一次更新n个
-    n=10
+    n=int(0.05*amount)
     for _ in range(n):
         new_xyz = np.copy(xyz)
         i = random.randint(0, len(xyz)-1)
-        new_xyz[i,:] = randintxyz_except(le,xyz,i,abc)
+        new_xyz[i,:] = randintxyz_except(le,xyz,i,a,b,c)
     #算新势能
     new_p = solve_p(new_xyz)
     #蒙特卡洛判决
@@ -93,10 +89,7 @@ def simulated_annealing(le,xyz,ii,current_p,abc):
     return xyz, current_p
     
 #画图函数
-def draw_3d(xyz,i,t,pmin,last_pmin,p0,le,n,amount,potentials,abc):
-    a0=abc[0]
-    b0=abc[1]
-    c0=abc[2]
+def draw_3d(xyz,i,t,pmin,last_pmin,p0,le,n,amount,potentials,a0,b0,c0):
     fig = plt.figure(figsize=(10, 10))
     cm = plt.get_cmap("coolwarm")  # 色图
 
@@ -190,11 +183,11 @@ def draw_3d(xyz,i,t,pmin,last_pmin,p0,le,n,amount,potentials,abc):
     data0 = len(x_values) 
     return data0
 
-def main(le,amount,n,abc):
+def main(le,amount,n,a,b,c):
     #初始化坐标
     xyz = np.empty((0, 3))
     for _ in range(amount):
-        xyz=np.append(xyz,[randintxyz_generate(le, xyz, abc)] ,axis=0)
+        xyz=np.append(xyz,[randintxyz_generate(le, xyz, a,b,c)] ,axis=0)
 
     #初始化设置
     potentials = []
@@ -206,7 +199,7 @@ def main(le,amount,n,abc):
     #循环
     for i in range(100000):
         #循环动作
-        xyz, pmin = simulated_annealing(le,xyz,i,pmin,abc)
+        xyz, pmin = simulated_annealing(le,amount,xyz,i,pmin,a,b,c)
         potentials.append(pmin)
         #隔段画图
         if (i+1)%n==0:
@@ -215,59 +208,84 @@ def main(le,amount,n,abc):
             t=t2-t1
             t1 = time.perf_counter()
             #画图
-            data0=draw_3d(xyz,i,t,pmin,last_pmin,p0,le,n,amount,potentials,abc)
+            data0=draw_3d(xyz,i,t,pmin,last_pmin,p0,le,n,amount,potentials,a,b,c)
             #记下上次最小值
             last_pmin=pmin
             if potentials[int(i/2)]-pmin<(potentials[0]-pmin)/15:
-                print("Finished!")
                 break
     print(pmin)
     return data0
 
 def mainmain():
     #获取初始参数
-    le,amount,n,abc=origin()
+    le,amount,n,a,b,c,times,datatimes=origin()
     #记录数据组
-    data=np.empty((10,3))
-    datay=np.array([])
-    curva=np.array([])
-    for _ in range(10):
-        for __ in range(3):
-            #得到c
-            abc[2]=(_+1)*0.1
-            data0=main(le,amount,n,abc)
+    data=np.empty((datatimes,times))
+    datay=np.empty((datatimes))
+    curva=np.empty((datatimes))
+    for _ in range(datatimes):
+        #得到c
+        c=(_+1)*(1/datatimes)
+        #计算对应高斯曲率
+        curva[_]=curvature(a,b,c)
+        #主循环试验
+        for __ in range(times):
+            start_time = time.perf_counter()
+            data0=main(le,amount,n,a,b,c)
             data[_,__]=data0
-        #计算高斯曲率
-        curva=np.append(curva,curvature(abc[0],abc[1],abc[2]))
-        #print检验
-        print('c=',abc[2],  'amount=',np.mean(data[_, :]))
-        datay = np.append(datay, np.mean(data[_, :]))
-        print('curvature=',curva[-1])
+            print(data0)
+            end_time = time.perf_counter()
+            t = end_time - start_time
+            #print检验
+            print("Finished!")
+            print(f'c: {c}, measured time:{__+1}/{times}, present data: {int(data[_,__])}')
+            print(f'Time cost: {t} seconds')
+            print('\n')
+        print('curvature={curva[-1]}\n')
 
-        # 作图
-        plt.scatter(np.power(curva, 1/4), datay)
-        plt.xlabel('curva^(1/4)')
-        plt.ylabel('datay')
-        plt.title('Relationship between datay and curva^(1/4)')
+        #赋值
+        datay[_]=np.mean(data[_])
 
-        # 线性回归
-        X = np.power(curva, 1/4).reshape(-1, 1)
-        y = datay.reshape(-1, 1)
-        reg = LinearRegression().fit(X, y)
-        y_pred = reg.predict(X)
-        plt.plot(np.power(curva, 1/4), y_pred, color='red', linewidth=2)
+        # 作图模块
+        for ___ in range(1):
+            #每一组data的平均值用红色点显示
+            plt.scatter(np.power(curva, 1/4), datay, color='red', marker='o', s=40)
 
-        # 计算R方
-        r2 = r2_score(y, y_pred)
-        plt.text(0.1, 0.9, f'R^2 = {r2:.2f}', transform=plt.gca().transAxes)
+            #把所有data数据点用灰色点显示
+            curva_expand = np.repeat(curva, times, axis=0)
+            plt.scatter(np.power(curva_expand, 1/4), data.ravel(), color='gray', marker='o', s=10)
 
-        # 显示基本信息
-        info = f'Amount: {amount}\n  a: {abc[0]}\n  b: {abc[1]}\n  C:0.1-1.0 '
-        plt.text(0.7, 0.1, info, transform=plt.gca().transAxes)
+            #标题
+            plt.xlabel('K^(1/4)')
+            plt.ylabel('sigma')
+            plt.title('Relationship between sigma and K^(1/4)')
 
-        plt.xlim(0.5, 2)  # Set x-axis limits
-        plt.savefig(f"C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Product/location.png", dpi=300)
-        plt.close()
+            # 线性回归
+            X = np.power(curva, 1/4).reshape(-1, 1)
+            y = datay.reshape(-1, 1)
+            reg = LinearRegression().fit(X, y)
+            y_pred = reg.predict(X)
+            plt.plot(np.power(curva, 1/4), y_pred, color='blue', linewidth=2)
+
+            # 延长趋势线
+            x_extend = np.linspace(0, 2, 100).reshape(-1, 1)
+            y_extend = reg.predict(x_extend)
+            plt.plot(x_extend, y_extend, color='blue', linestyle='--', linewidth=2)
+            
+            # 计算R方
+            r2 = r2_score(y, y_pred)
+            plt.text(0.1, 0.9, f'R^2 = {r2:.2f}', transform=plt.gca().transAxes)
+
+            # 显示基本信息
+            info = f'Amount: {amount}  \na: {a}  \nb: {b}  \nC:0.1-1.0  \nmeasurement Times: {times}  \nDataTimes: {1/datatimes}'
+            plt.text(0.6, 0.1, info, transform=plt.gca().transAxes)
+
+            #图基本设置
+            plt.grid(True)
+            plt.xlim(0, 2)  # Set x-axis limits
+            plt.savefig(f"C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Product/location.png", dpi=300)
+            plt.close()
+
     print(data)
     print(datay)
 
