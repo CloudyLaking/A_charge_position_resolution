@@ -19,11 +19,10 @@ def origin():
     a=0.5
     b=0.5
     c=0.0
-
     # 电荷数
     print("charges amount?")
     amount = int(input())
-    # 多少次输出一次图像
+    #多少次输出一次图像
     print("interval times?")
     n = int(input())
     #每次测量几次
@@ -41,29 +40,29 @@ def solve_p(xyxy):
     # 将对角线上的元素设置为无穷大，以排除自距离
     np.fill_diagonal(distances, np.inf)
     # 计算倒数之和
-    return np.sum(1.0 / distances)
+    return np.sum(np.divide(1.0 , distances))
 
 #判断坐标xyz是否在abc椭球范围的函数
 def isin(xyz,a0,b0,c0):
-    return (xyz[0]/a0)**2+(xyz[1]/b0)**2+(xyz[2]/c0)**2<=1
+    return np.sum(np.divide(xyz , np.array([a0, b0, c0]))**2) <= 1
 
-#计算椭球顶点高斯曲率的函数
+#计算椭球顶点高斯曲率除c的函数
 def curvature(a, b, c):
-    return np.square(c) / np.multiply(np.square(a) ,np.square(b))
+    return np.multiply(np.square(a), np.square(b))
 
 # 范围内正态生成一个新坐标的函数
-def randintxyz_except(le, xyz, i, a0,b0,c0):
+def randintxyz_except(xyz, i, a0 ,b0 ,c0, step):
     lenxyz=len(xyz)
     for _ in range(100):
-        a = np.clip(np.random.normal(xyz[i, 0], 0.2), -a0, a0)
-        b = np.clip(np.random.normal(xyz[i, 1], 0.2), -b0, b0)
-        c = np.clip(np.random.normal(xyz[i, 2], 0.2), -c0, c0)
+        a = np.clip(np.random.normal(xyz[i, 0], step), -a0, a0)
+        b = np.clip(np.random.normal(xyz[i, 1], step), -b0, b0)
+        c = np.clip(np.random.normal(xyz[i, 2], step), -c0, c0)
         if isin([a,b,c],a0,b0,c0):
             return np.array([a, b, c])
     return np.array([xyz[i,0], xyz[i,1], xyz[i,2]])
 
 #随机生成一个范围内新坐标的函数
-def randintxyz_generate(le, xyz, a0,b0,c0):
+def randintxyz_generate(xyz, a0,b0,c0):
     lenxyz=len(xyz)
     for _ in range(100):
         a = np.random.uniform(-a0, a0)
@@ -74,13 +73,11 @@ def randintxyz_generate(le, xyz, a0,b0,c0):
     return np.array([0,0,0]) #为了防止出错还是弄了一个  
 
 # 模拟退火算法一次
-def simulated_annealing(le,amount,xyz,ii,current_p,a,b,c):
-    #一次更新n个
-    n=int(0.05*amount)
-    for _ in range(n):
-        new_xyz = np.copy(xyz)
+def simulated_annealing(xyz,ii,current_p,a,b,c, m,step,T):
+    new_xyz = np.copy(xyz)
+    for _ in range(m):
         i = random.randint(0, len(xyz)-1)
-        new_xyz[i,:] = randintxyz_except(le,xyz,i,a,b,c)
+        new_xyz[i,:] = randintxyz_except(xyz,i,a,b,c,step)
     #算新势能
     new_p = solve_p(new_xyz)
     #蒙特卡洛判决
@@ -89,12 +86,12 @@ def simulated_annealing(le,amount,xyz,ii,current_p,a,b,c):
     return xyz, current_p
     
 #画图函数
-def draw_3d(xyz,i,t,pmin,last_pmin,p0,le,n,amount,potentials,a0,b0,c0):
+def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
     fig = plt.figure(figsize=(10, 10))
     cm = plt.get_cmap("coolwarm")  # 色图
 
     # First subplot for 3D plot
-    col = [cm(float(xyz[i,2])/(le)) for i in range(amount)]
+    col = [cm((float(xyz[i,2]))/(le)) for i in range(amount)]
     ax1 = fig.add_subplot(221, projection='3d')  # Modify the subplot number to 221
     # Generate colorbar
     norm = mpl.colors.Normalize(vmin=-le, vmax=le)
@@ -183,11 +180,11 @@ def draw_3d(xyz,i,t,pmin,last_pmin,p0,le,n,amount,potentials,a0,b0,c0):
     data0 = len(x_values) 
     return data0
 
-def main(le,amount,n,a,b,c):
+def main(le,amount,n,a,b,c,m,step,T):
     #初始化坐标
     xyz = np.empty((0, 3))
     for _ in range(amount):
-        xyz=np.append(xyz,[randintxyz_generate(le, xyz, a,b,c)] ,axis=0)
+        xyz=np.append(xyz,[randintxyz_generate(xyz, a,b,c)] ,axis=0)
 
     #初始化设置
     potentials = []
@@ -196,10 +193,10 @@ def main(le,amount,n,a,b,c):
     pmin=p0
     #计时
     t1 = time.perf_counter()
-    #循环
+    #循环:最大次数100000
     for i in range(100000):
         #循环动作
-        xyz, pmin = simulated_annealing(le,amount,xyz,i,pmin,a,b,c)
+        xyz, pmin = simulated_annealing(xyz,i,pmin,a,b,c,m,step,T)
         potentials.append(pmin)
         #隔段画图
         if (i+1)%n==0:
@@ -208,30 +205,38 @@ def main(le,amount,n,a,b,c):
             t=t2-t1
             t1 = time.perf_counter()
             #画图
-            data0=draw_3d(xyz,i,t,pmin,last_pmin,p0,le,n,amount,potentials,a,b,c)
+            data0=draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a,b,c)
             #记下上次最小值
             last_pmin=pmin
-            if potentials[int(i/2)]-pmin<(potentials[0]-pmin)/15:
+            if potentials[int(i/2)]-pmin<(potentials[0]-pmin)/15:#稳态判据
                 break
-    print(pmin)
     return data0
 
 def mainmain():
     #获取初始参数
     le,amount,n,a,b,c,times,datatimes=origin()
+    #核心控制参数：
+    #随机生成一次更新百分之多少
+    pm=0.005
+    m=int(pm*amount) if int(pm*amount)>0 else 1
+    #正态生成坐标步长
+    step=0.4
+    #初始温度
+    T=10
+
     #记录数据组
     data=np.empty((datatimes,times))
     datay=np.empty((datatimes))
     curva=np.empty((datatimes))
     for _ in range(datatimes):
-        #得到c
+        #顺序迭代c
         c=(_+1)*(1/datatimes)
         #计算对应高斯曲率
         curva[_]=curvature(a,b,c)
         #主循环试验
         for __ in range(times):
             start_time = time.perf_counter()
-            data0=main(le,amount,n,a,b,c)
+            data0=main(le,amount,n,a,b,c,m,step,T)
             data[_,__]=data0
             print(data0)
             end_time = time.perf_counter()
@@ -256,9 +261,9 @@ def mainmain():
             plt.scatter(np.power(curva_expand, 1/4), data.ravel(), color='gray', marker='o', s=10)
 
             #标题
-            plt.xlabel('K^(1/4)')
+            plt.xlabel('K^(1/4)/c^(1/2)')
             plt.ylabel('sigma')
-            plt.title('Relationship between sigma and K^(1/4)')
+            plt.title('Relationship between sigma and K^(1/4)/c^(1/2)')
 
             # 线性回归
             X = np.power(curva, 1/4).reshape(-1, 1)
@@ -282,7 +287,7 @@ def mainmain():
 
             #图基本设置
             plt.grid(True)
-            plt.xlim(0, 2)  # Set x-axis limits
+            
             plt.savefig(f"C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Product/location.png", dpi=300)
             plt.close()
 
