@@ -1,3 +1,6 @@
+# 以管理员身份运行程序
+import ctypes
+ctypes.windll.shell32.ShellExecuteW(None, "runas", "python", "C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Julia/test/A_charge_position_resolution/1.8.1 an ellips chart.py", None, 1)
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -11,7 +14,9 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
+
 ##退火方法3D网格中求解数个电荷电势最低分布##
+
 #元数据获取函数
 def origin():
     # 设置网格大小与椭球大小
@@ -146,34 +151,46 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
         ellipse = mpl.patches.Ellipse((0, 0), 2*a0, 2*b0, edgecolor='red', facecolor='none')
         ax3.add_patch(ellipse)
         
-    # Fourth subplot for 2D plot
-    ax4 = fig.add_subplot(224, aspect='equal')  # Set aspect ratio to 'equal'
-    delta = 0.005  # Adjust this value as needed
-    z_values = c0-delta
-    z_indices = np.where((xyz[:, 2] >= z_values - delta) & (xyz[:, 2] <= z_values + delta)\
-        & (xyz[:, 0] <= 0.01) & (xyz[:, 1] <= 0.01))[0]  # Select rows where z is in [z_values - delta, z_values + delta] and x <= 0.02 and y <= 0.02
-    x_values = xyz[z_indices, 0]
-    y_values = xyz[z_indices, 1]
+        # Fourth subplot for 2D plot
+        delta = 0.005  # Adjust this value as needed
+        z_values = c0-delta
+        z_indices = np.where((xyz[:, 2] >= z_values - delta) & (xyz[:, 2] <= z_values + delta)\
+            & (xyz[:, 0] <= 0.02) & (xyz[:, 1] <= 0.02))[0]  # Select rows where z is in [z_values - delta, z_values + delta] and x <= 0.02 and y <= 0.02
+        x_values = xyz[z_indices, 0]
+        y_values = xyz[z_indices, 1]
 
-    if x_values.size > 0 and y_values.size > 0:  # Check if x_values and y_values are not empty
-        ax4.scatter(x_values, y_values, c='orange')  # Convert col to a numpy array
-        ax4.set_xlabel('X')
-        ax4.set_ylabel('Y')
-        ax4.set_title(f'2D Slices at Z = {z_values-delta, z_values+delta} \n  Points: {len(x_values)}')
-        ax4.set_xlim(-le, le)  # Set x-axis limits to 0 and le
-        ax4.set_ylim(-le, le)  # Set y-axis limits to 0 and le
-        ax4.grid(True)
-        # Add ellipse high
-        aup=a0*np.sqrt(1-((z_values+delta)/c0)**2)
-        bup=b0*np.sqrt(1-((z_values+delta)/c0)**2)
-        ellipseup = mpl.patches.Ellipse((0, 0), 2*aup, 2*bup, edgecolor='red', facecolor='none')
-        # Add ellipse low
-        adown=a0*np.sqrt(1-((z_values-delta)/c0)**2)
-        bdown=b0*np.sqrt(1-((z_values-delta)/c0)**2)
-        ellipsdown = mpl.patches.Ellipse((0, 0), 2*adown, 2*bdown, edgecolor='blue', facecolor='none')
+        if x_values.size > 0 and y_values.size > 0:  # Check if x_values and y_values are not empty
+            ax3.scatter(x_values, y_values, c='red')  # Convert col to a numpy array
+            ax3.set_title(f'2D Slices at Z = {z_values-delta, z_values+delta} \n  Points: {len(x_values)}')
+            # Add ellipse high
+            aup=a0*np.sqrt(1-((z_values+delta)/c0)**2)
+            bup=b0*np.sqrt(1-((z_values+delta)/c0)**2)
+            ellipseup = mpl.patches.Ellipse((0, 0), 2*aup, 2*bup, edgecolor='red', facecolor='none')
+            # Add ellipse low
+            adown=a0*np.sqrt(1-((z_values-delta)/c0)**2)
+            bdown=b0*np.sqrt(1-((z_values-delta)/c0)**2)
+            ellipsdown = mpl.patches.Ellipse((0, 0), 2*adown, 2*bdown, edgecolor='blue', facecolor='none')
 
-        ax4.add_patch(ellipseup)
-        ax4.add_patch(ellipsdown)
+            ax3.add_patch(ellipseup)
+            ax3.add_patch(ellipsdown)
+            
+        #True Fourth subplot for 2D plot
+        # Second subplot for potential decrease rate plot
+        ax5 = fig.add_subplot(224)
+        decrease_rate = -np.diff(potentials)
+        colors = ['red' if rate < 0 else 'green' if rate > 0 else 'blue' for rate in decrease_rate[:-1]] + ['green']
+        ax5.scatter(range(1, len(decrease_rate)+1), decrease_rate, c=colors)
+        if len(decrease_rate) > 20000:
+            ax5.set_xlim(len(decrease_rate)-20000, len(decrease_rate))
+            ax5.set_ylim(min(decrease_rate[-20000:]), max(decrease_rate[-20000:]))
+        else:
+            ax5.set_xlim(0, len(decrease_rate))
+            ax5.set_ylim(min(decrease_rate), max(decrease_rate))
+        ax5.set_xlabel('Iteration')
+        ax5.set_ylabel('Potential Decrease Rate')
+        ax5.set_title('Potential Decrease Rate vs Iteration')
+        ax5.grid(True)
+
 
     plt.tight_layout()
     plt.savefig(f"C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Product/charge_anneal.png", dpi=300)
@@ -196,9 +213,9 @@ def main(le,amount,n,a,b,c,m,step,T0,v):
     pmin=p0
     #计时
     t1 = time.perf_counter()
+    T=T0
     #循环:最大次数100000
-    for i in range(20000):
-        T=T0*(1-i/20000)
+    for i in range(600000):
         #循环动作
         xyz, pmin = simulated_annealing(xyz,i,pmin,a,b,c,m,step,T)
         potentials.append(pmin)
@@ -214,9 +231,13 @@ def main(le,amount,n,a,b,c,m,step,T0,v):
             last_pmin=pmin
             #判断是否稳定
             diff1 = np.subtract(potentials[int(i/2)], pmin)
-            diff2 = np.subtract(potentials[int(i/10)], pmin)
+            diff2 = np.subtract(potentials[int(i/20)], pmin)
             threshold = np.divide(np.subtract(potentials[0], pmin), v)
-            if diff1 < threshold and diff2 < threshold and diff1 > 0 and diff2 > 0:
+            #开始收敛
+            if diff1 < threshold*2 and diff2 < threshold*20 and diff1 > 0 and diff2 > 0:
+                T = T * 0.99
+                print(f'Converging... T={T}')
+            if diff1 < threshold and diff2 < threshold*10 and diff1 > 0 and diff2 > 0:
                 break
     return data0
 
@@ -230,9 +251,9 @@ def mainmain():
     #正态生成坐标步长
     step=0.5
     #初始温度
-    T0=0.0003
+    T0=0.0002
     #稳态判据
-    v=25
+    v=200
 
     #记录数据组
     data=np.empty((datatimes,times))
@@ -255,10 +276,10 @@ def mainmain():
             print(f'c: {c}, measured time:{__+1}/{times}, present data: {int(data[_,__])}')
             print(f'Time cost: {t} seconds')
             print('\n')
-        print('curvature',curva[-1],'\n')
 
         #赋值
         datay[_]=np.mean(data[_])
+        print(datay[_],'\n')
 
         # 作图模块
         for ___ in range(1):
