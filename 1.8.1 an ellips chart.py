@@ -46,7 +46,7 @@ def solve_p(xyxy):
 def isin(xyz,a0,b0,c0):
     return np.sum(np.divide(xyz , np.array([a0, b0, c0]))**2) <= 1
 
-#计算椭球顶点高斯曲率除c的函数
+#计算椭球（1/ab）的函数
 def curvature(a, b, c):
     return np.divide(1,np.multiply(a,b))
 
@@ -82,6 +82,8 @@ def simulated_annealing(xyz,ii,current_p,a,b,c, m,step,T):
     new_p = solve_p(new_xyz)
     #蒙特卡洛判决
     if new_p < current_p:
+        return new_xyz, new_p
+    elif np.random.rand() < np.exp(np.divide(np.subtract(current_p , new_p) , np.multiply(current_p,T))):
         return new_xyz, new_p
     return xyz, current_p
     
@@ -181,7 +183,7 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
     data0 = len(x_values) 
     return data0
 
-def main(le,amount,n,a,b,c,m,step,T):
+def main(le,amount,n,a,b,c,m,step,T0,v):
     #初始化坐标
     xyz = np.empty((0, 3))
     for _ in range(amount):
@@ -195,7 +197,8 @@ def main(le,amount,n,a,b,c,m,step,T):
     #计时
     t1 = time.perf_counter()
     #循环:最大次数100000
-    for i in range(100000):
+    for i in range(20000):
+        T=T0*(1-i/20000)
         #循环动作
         xyz, pmin = simulated_annealing(xyz,i,pmin,a,b,c,m,step,T)
         potentials.append(pmin)
@@ -209,7 +212,11 @@ def main(le,amount,n,a,b,c,m,step,T):
             data0=draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a,b,c)
             #记下上次最小值
             last_pmin=pmin
-            if potentials[int(i/2)]-pmin<(potentials[0]-pmin)/15:#稳态判据
+            #判断是否稳定
+            diff1 = np.subtract(potentials[int(i/2)], pmin)
+            diff2 = np.subtract(potentials[int(i/10)], pmin)
+            threshold = np.divide(np.subtract(potentials[0], pmin), v)
+            if diff1 < threshold and diff2 < threshold and diff1 > 0 and diff2 > 0:
                 break
     return data0
 
@@ -217,13 +224,15 @@ def mainmain():
     #获取初始参数
     le,amount,n,a,b,c,times,datatimes=origin()
     #核心控制参数：
-    #随机生成一次更新百分之多少
-    pm=0.005
+    #随机生成一次更新百分之多少(还要调)
+    pm=0.001
     m=int(pm*amount) if int(pm*amount)>0 else 1
     #正态生成坐标步长
-    step=0.4
+    step=0.5
     #初始温度
-    T=10
+    T0=0.0003
+    #稳态判据
+    v=25
 
     #记录数据组
     data=np.empty((datatimes,times))
@@ -237,7 +246,7 @@ def mainmain():
         #主循环试验
         for __ in range(times):
             start_time = time.perf_counter()
-            data0=main(le,amount,n,a,b,c,m,step,T)
+            data0=main(le,amount,n,a,b,c,m,step,T0,v)
             data[_,__]=data0
             end_time = time.perf_counter()
             t = end_time - start_time
