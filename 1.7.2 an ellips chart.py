@@ -48,7 +48,7 @@ def isin(xyz,a0,b0,c0):
 
 #计算椭球顶点高斯曲率除c的函数
 def curvature(a, b, c):
-    return np.multiply(np.square(a), np.square(b))
+    return np.divide(1,np.multiply(a,b))
 
 # 范围内正态生成一个新坐标的函数
 def randintxyz_except(xyz, i, a0 ,b0 ,c0, step):
@@ -146,9 +146,10 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
         
     # Fourth subplot for 2D plot
     ax4 = fig.add_subplot(224, aspect='equal')  # Set aspect ratio to 'equal'
-    z_values = 0.95*c0
-    delta = 0.05*c0  # Adjust this value as needed
-    z_indices = np.where((xyz[:, 2] >= z_values - delta) & (xyz[:, 2] <= z_values + delta))[0]  # Select rows where z is in [z_values - delta, z_values + delta]
+    delta = 0.005  # Adjust this value as needed
+    z_values = c0-delta
+    z_indices = np.where((xyz[:, 2] >= z_values - delta) & (xyz[:, 2] <= z_values + delta)\
+        & (xyz[:, 0] <= 0.01) & (xyz[:, 1] <= 0.01))[0]  # Select rows where z is in [z_values - delta, z_values + delta] and x <= 0.02 and y <= 0.02
     x_values = xyz[z_indices, 0]
     y_values = xyz[z_indices, 1]
 
@@ -238,7 +239,6 @@ def mainmain():
             start_time = time.perf_counter()
             data0=main(le,amount,n,a,b,c,m,step,T)
             data[_,__]=data0
-            print(data0)
             end_time = time.perf_counter()
             t = end_time - start_time
             #print检验
@@ -246,7 +246,7 @@ def mainmain():
             print(f'c: {c}, measured time:{__+1}/{times}, present data: {int(data[_,__])}')
             print(f'Time cost: {t} seconds')
             print('\n')
-        print('curvature={curva[-1]}\n')
+        print('curvature',curva[-1],'\n')
 
         #赋值
         datay[_]=np.mean(data[_])
@@ -254,16 +254,16 @@ def mainmain():
         # 作图模块
         for ___ in range(1):
             #每一组data的平均值用红色点显示
-            plt.scatter(np.power(curva, 1/4), datay, color='red', marker='o', s=40)
+            plt.scatter(curva, datay, color='red', marker='o', s=40)
 
             #把所有data数据点用灰色点显示
             curva_expand = np.repeat(curva, times, axis=0)
-            plt.scatter(np.power(curva_expand, 1/4), data.ravel(), color='gray', marker='o', s=10)
+            plt.scatter(curva_expand, data.ravel(), color='gray', marker='o', s=10)
 
             #标题
-            plt.xlabel('K^(1/4)/c^(1/2)')
+            plt.xlabel('1/a')
             plt.ylabel('sigma')
-            plt.title('Relationship between sigma and K^(1/4)/c^(1/2)')
+            plt.title('Relationship between sigma and 1/a')
 
             # 线性回归
             X = np.power(curva, 1/4).reshape(-1, 1)
