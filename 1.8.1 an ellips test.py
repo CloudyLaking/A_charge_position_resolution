@@ -1,6 +1,3 @@
-# 以管理员身份运行程序
-import ctypes
-ctypes.windll.shell32.ShellExecuteW(None, "runas", "python", "C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Julia/test/A_charge_position_resolution/1.8.1 an ellips chart.py", None, 1)
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -109,7 +106,7 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
     ax1.grid(False)
     #draw
     ax1.view_init(15, 60, 0)
-    ax1.scatter(xyz[:, 0], xyz[:, 1], xyz[:, 2], c=col, depthshade=True,s=2)
+    ax1.scatter(xyz[:, 0], xyz[:, 1], xyz[:, 2], c=col, depthshade=True,s=10)
     ax1.set_xlabel('X')
     ax1.set_ylabel('Y')
     ax1.set_zlabel('Z')
@@ -133,8 +130,8 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
 
     # Third subplot for 2D plot
     ax3 = fig.add_subplot(223, aspect='equal')  # Set aspect ratio to 'equal'
-    z_values = 0*le
-    delta = 0.04*le  # Adjust this value as needed
+    z_values = 0
+    delta = 0.2*c0  # Adjust this value as needed
     z_indices = np.where((xyz[:, 2] >= z_values - delta) & (xyz[:, 2] <= z_values + delta))[0]  # Select rows where z is in [z_values - delta, z_values + delta]
     x_values = xyz[z_indices, 0]
     y_values = xyz[z_indices, 1]
@@ -143,7 +140,7 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
         ax3.scatter(x_values, y_values, c='orange')  # Convert col to a numpy array
         ax3.set_xlabel('X')
         ax3.set_ylabel('Y')
-        ax3.set_title(f'2D Slices at Z = {z_values-delta, z_values+delta} \n  Points: {len(x_values)}')
+
         ax3.set_xlim(-le, le)  # Set x-axis limits to 0 and le
         ax3.set_ylim(-le, le)  # Set y-axis limits to 0 and le
         ax3.grid(True)
@@ -152,16 +149,24 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
         ax3.add_patch(ellipse)
         
         # Fourth subplot for 2D plot
-        delta = 0.005  # Adjust this value as needed
+        delta = 0.02  
         z_values = c0-delta
-        z_indices = np.where((xyz[:, 2] >= z_values - delta) & (xyz[:, 2] <= z_values + delta)\
-            & (xyz[:, 0] <= 0.02) & (xyz[:, 1] <= 0.02))[0]  # Select rows where z is in [z_values - delta, z_values + delta] and x <= 0.02 and y <= 0.02
+        R=0.069
+
+        z_indices = np.where((np.square(xyz[:, 0])+np.square(xyz[:, 1]) <= np.square(R)) &
+                             ((xyz[:, 2] >= z_values - delta) & (xyz[:, 2] <= z_values + delta)
+                              | (xyz[:, 2] >= -z_values - delta) & (xyz[:, 2] <= -z_values + delta)))[0]
         x_values = xyz[z_indices, 0]
         y_values = xyz[z_indices, 1]
+        print(xyz[z_indices,0],'\n')    
+        print(xyz[z_indices,2],'\n')
 
+        ax3.set_title(f'2D Slices at Z = {z_values-delta:.4f}, {z_values+delta:.4f} and (-0.04c,0.04c)\n  Points: {len(x_values)}    R={R}')
+
+        #画椭圆
         if x_values.size > 0 and y_values.size > 0:  # Check if x_values and y_values are not empty
             ax3.scatter(x_values, y_values, c='red')  # Convert col to a numpy array
-            ax3.set_title(f'2D Slices at Z = {z_values-delta, z_values+delta} \n  Points: {len(x_values)}')
+            
             # Add ellipse high
             aup=a0*np.sqrt(1-((z_values+delta)/c0)**2)
             bup=b0*np.sqrt(1-((z_values+delta)/c0)**2)
@@ -169,7 +174,7 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
             # Add ellipse low
             adown=a0*np.sqrt(1-((z_values-delta)/c0)**2)
             bdown=b0*np.sqrt(1-((z_values-delta)/c0)**2)
-            ellipsdown = mpl.patches.Ellipse((0, 0), 2*adown, 2*bdown, edgecolor='blue', facecolor='none')
+            ellipsdown = mpl.patches.Ellipse((0, 0), 2*R, 2*R, edgecolor='blue', facecolor='none')
 
             ax3.add_patch(ellipseup)
             ax3.add_patch(ellipsdown)
@@ -193,7 +198,7 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
 
 
     plt.tight_layout()
-    plt.savefig(f"C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Product/charge_anneal.png", dpi=300)
+    plt.savefig(f"charge_anneal.png", dpi=300)
     plt.close(fig)
 
     #记录个数
@@ -215,7 +220,7 @@ def main(le,amount,n,a,b,c,m,step,T0,v):
     t1 = time.perf_counter()
     T=T0
     #循环:最大次数100000
-    for i in range(600000):
+    for i in range(500000):
         #循环动作
         xyz, pmin = simulated_annealing(xyz,i,pmin,a,b,c,m,step,T)
         potentials.append(pmin)
@@ -234,10 +239,11 @@ def main(le,amount,n,a,b,c,m,step,T0,v):
             diff2 = np.subtract(potentials[int(i/20)], pmin)
             threshold = np.divide(np.subtract(potentials[0], pmin), v)
             #开始收敛
-            if diff1 < threshold*2 and diff2 < threshold*20 and diff1 > 0 and diff2 > 0:
-                T = T * 0.99
+            if diff1 < threshold*3 and diff2 < threshold*6 and diff1 > 0 and diff2 > 0:
+                T = T * 0.8
                 print(f'Converging... T={T}')
-            if diff1 < threshold and diff2 < threshold*10 and diff1 > 0 and diff2 > 0:
+            if (diff1 < threshold and diff2 < threshold and diff1 > 0 and diff2 > 0):
+                print('potential:{}\n'.format(pmin))
                 break
     return data0
 
@@ -245,15 +251,13 @@ def mainmain():
     #获取初始参数
     le,amount,n,a,b,c,times,datatimes=origin()
     #核心控制参数：
-    #随机生成一次更新百分之多少(还要调)
-    pm=0.001
+    #助跑
+    pm=0.01
     m=int(pm*amount) if int(pm*amount)>0 else 1
-    #正态生成坐标步长
-    step=0.5
     #初始温度
     T0=0.0002
     #稳态判据
-    v=200
+    v=80
 
     #记录数据组
     data=np.empty((datatimes,times))
@@ -263,7 +267,9 @@ def mainmain():
         #顺序迭代c
         c=(_+1)*(1/datatimes)
         #计算对应高斯曲率
-        curva[_]=curvature(a,b,c)
+        curva[_]=c
+        #正态生成坐标步长
+        step=a*b*c*4
         #主循环试验
         for __ in range(times):
             start_time = time.perf_counter()
@@ -279,7 +285,7 @@ def mainmain():
 
         #赋值
         datay[_]=np.mean(data[_])
-        print(datay[_],'\n')
+        print('sigma:',datay[_],'\n')
 
         # 作图模块
         for ___ in range(1):
@@ -296,11 +302,11 @@ def mainmain():
             plt.title('Relationship between sigma and 1/a')
 
             # 线性回归
-            X = np.power(curva, 1/4).reshape(-1, 1)
+            X = curva.reshape(-1, 1)
             y = datay.reshape(-1, 1)
             reg = LinearRegression().fit(X, y)
             y_pred = reg.predict(X)
-            plt.plot(np.power(curva, 1/4), y_pred, color='blue', linewidth=2)
+            plt.plot(curva, y_pred, color='blue', linewidth=2)
 
             # 延长趋势线
             x_extend = np.linspace(0, 2, 100).reshape(-1, 1)
@@ -312,13 +318,13 @@ def mainmain():
             plt.text(0.1, 0.9, f'R^2 = {r2:.2f}', transform=plt.gca().transAxes)
 
             # 显示基本信息
-            info = f'Amount: {amount}  \na: {a}  \nb: {b}  \nC:0.1-1.0  \nmeasurement Times: {times}  \nDataTimes: {1/datatimes}'
+            info = f'Amount: {amount}  \na: {a}  \nb: {b}  \nC:{le/datatimes}-{le}  \nMeasurement Times: {times}  \nData division: {1/datatimes}'
             plt.text(0.6, 0.1, info, transform=plt.gca().transAxes)
 
             #图基本设置
             plt.grid(True)
             
-            plt.savefig(f"C:/Users/lihui/OneDrive/CL/OneDrive/CloudyLake Programming/Product/location.png", dpi=300)
+            plt.savefig(f"charge_c.png", dpi=300)
             plt.close()
 
     print(data)
