@@ -279,7 +279,7 @@ def mainmain():
         # 作图模块
             fig = plt.figure(figsize=(6, 6))
             #每一组data的平均值用红色点显示
-            mask = [i for i in range(_)]#筛查
+            mask = [i for i in range(_) ]#筛查
             plt.scatter(curva[mask], datay[mask], color='red', marker='o', s=40)
 
             #把所有data数据点用灰色点显示
@@ -294,11 +294,11 @@ def mainmain():
             plt.title('Relationship between sigma of A/B and 1/c')
 
             # 线性回归
-            X = curva_expand.reshape(-1, 1)
-            y = data_expand.reshape(-1, 1)
+            X = curva.reshape(-1, 1)
+            y = datay.reshape(-1, 1)
             coeffs = np.polyfit(X.flatten(), y.flatten(), 1)
             y_pred = np.polyval(coeffs, X.flatten())
-            plt.plot(curva_expand, y_pred, color='blue', linewidth=2)
+            plt.plot(curva, y_pred, color='blue', linewidth=2)
 
             # 延长趋势线
             x_extend = np.linspace(0, 2, 100).reshape(-1, 1)
