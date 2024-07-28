@@ -107,41 +107,19 @@ def draw_3d(xyz,xyz0,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
     plt.rcParams['axes.unicode_minus'] = False  # 解决保存图像时负号'-'显示为方块的问题
     
     # First subplot for 3D plot
-    col = ['black' for _ in range(amount)]  # Set all colors to black
-    ax2 = fig.add_subplot(232, projection='3d')  # Modify the subplot number to 221
-    # Remove grid lines
-    ax2.grid(False)
-
+    col = np.sqrt((xyz0[:, 0]/a0)**2 + (xyz0[:, 1]/b0)**2 + (xyz0[:, 2]/c0)**2)      # Normalize the distance to [0, 1]
+    col = (col - np.min(col)) / (np.max(col) - np.min(col))
+    
+    # Convert the distance to colors
+    col = np.array([(1-col[i], 1-col[i], 1-col[i]) for i in range(amount)])
+    
     # Draw a cube
     r = [-round(a0, 2), round(a0, 2)] if a0 > c0 else [-round(c0, 2), round(c0, 2)]
-    for s, e in combinations(np.array(list(product(r, r, r))), 2):
-        if np.sum(np.abs(s-e)) == r[1]-r[0]:
-            ax2.plot3D(*zip(s, e), color="black", linewidth=0.5)
-
-    # Set aspect ratio
-    ax2.set_box_aspect([1,1,1])
-
-    # Draw scatter plot
-    ax2.view_init(15, 60, 0)
-    ax2.scatter(xyz[:, 0], xyz[:, 1], xyz[:, 2], c=col, depthshade=True,s=10)
-    # Set the title for ax1
-    ax2.set_title('(b) 电荷模拟分布状态', loc='left')
-    # Set the number of ticks on the x, y, and z axes to 2
-    ax2.set_xticks(r)
-    ax2.set_yticks(r)
-    ax2.set_zticks(r)
-
-    # Set the tick labels to the minimum and maximum values
-    ax2.set_xticklabels(r)
-    ax2.set_yticklabels(r)
-    ax2.set_zticklabels(r)
-
+    
     ax1 = fig.add_subplot(231, projection='3d')  # Modify the subplot number to 221
     # Remove grid lines
     ax1.grid(False)
-
     # Draw a cube
-    r = [-a0, a0] if a0 > c0 else [-c0, c0]
     for s, e in combinations(np.array(list(product(r, r, r))), 2):
         if np.sum(np.abs(s-e)) == r[1]-r[0]:
             ax1.plot3D(*zip(s, e), color="black", linewidth=0.5)
@@ -153,7 +131,7 @@ def draw_3d(xyz,xyz0,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
     ax1.view_init(15, 60, 0)
     ax1.scatter(xyz0[:, 0], xyz0[:, 1], xyz0[:, 2], c=col, depthshade=True,s=10)
     # Set the title for ax1
-    ax1.set_title('(a) 电荷初始分布状态', loc='left')
+    ax1.set_title('(a) 电荷初始分布状态\n距离原点较远的电荷颜色更深', loc='left')
     # Set the number of ticks on the x, y, and z axes to 2
     ax1.set_xticks(r)
     ax1.set_yticks(r)
@@ -163,6 +141,37 @@ def draw_3d(xyz,xyz0,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
     ax1.set_xticklabels(r)
     ax1.set_yticklabels(r)
     ax1.set_zticklabels(r)
+
+
+    # First subplot for 3D plot
+    col = np.sqrt((xyz[:, 0]/a0)**2 + (xyz[:, 1]/b0)**2 + (xyz[:, 2]/c0)**2)      # Normalize the distance to [0, 1]    # Normalize the distance to [0, 1]
+    col = (col - np.min(col)) / (np.max(col) - np.min(col))
+
+    # Convert the distance to colors
+    col = np.array([(1-col[i], 1-col[i], 1-col[i]) for i in range(amount)])
+    
+    ax2 = fig.add_subplot(232, projection='3d')  # Modify the subplot number to 221
+    # Remove grid lines
+    ax2.grid(False)
+    # Set aspect ratio
+    ax2.set_box_aspect([1,1,1])
+    for s, e in combinations(np.array(list(product(r, r, r))), 2):
+        if np.sum(np.abs(s-e)) == r[1]-r[0]:
+            ax2.plot3D(*zip(s, e), color="black", linewidth=0.5)
+    # Draw scatter plot
+    ax2.view_init(15, 60, 0)
+    ax2.scatter(xyz[:, 0], xyz[:, 1], xyz[:, 2], c=col, depthshade=True,s=10)
+    # Set the title for ax1
+    ax2.set_title('(b) 电荷模拟分布状态\n距离原点较远的电荷颜色更深', loc='left')
+    # Set the number of ticks on the x, y, and z axes to 2
+    ax2.set_xticks(r)
+    ax2.set_yticks(r)
+    ax2.set_zticks(r)
+
+    # Set the tick labels to the minimum and maximum values
+    ax2.set_xticklabels(r)
+    ax2.set_yticklabels(r)
+    ax2.set_zticklabels(r)
 
     # 3rd subplot for potential plot
     ax3 = fig.add_subplot(233)
