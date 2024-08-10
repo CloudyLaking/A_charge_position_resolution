@@ -13,6 +13,7 @@ from multiprocessing import Pool
 import numba
 import matplotlib.pyplot as plt
 from itertools import combinations, product
+import os
 
 ##退火方法3D网格中求解数个电荷电势最低分布##
 
@@ -246,8 +247,17 @@ def draw_3d(xyz,xyz0,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
             
 
     decrease_rate = -np.diff(potentials)
-    plt.savefig(f"charge_anneal.png", dpi=300)
-    plt.close(fig)
+    # 获取当前文件的绝对路径
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 生成图片的完整路径
+    image_path = os.path.join(script_dir, f'charge_anneal.png')
+
+    # 保存图片到指定路径
+    plt.tight_layout()
+    plt.savefig(image_path, dpi=300)
+    plt.close()
+    
     #记录个数
     data0 = len(x_values) 
     decreasepoint=len([i for i in decrease_rate[-20000:] if i > 0])
@@ -377,10 +387,17 @@ def mainmain():
             r2 = 1 - (ss_res / ss_tot)
             plt.text(0.1, 0.8, 'y = {:.2f}x + {:.2f}\n\nR^2 = {:.2f}'.format(coeffs[0], coeffs[1], r2), transform=plt.gca().transAxes, fontsize=12)
 
-            #图基本设置
+            # 获取当前文件的绝对路径
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # 生成图片的完整路径
+            image_path = os.path.join(script_dir, f'charge_c.png')
+
+            # 保存图片到指定路径
             plt.tight_layout()
             plt.grid(True)
-            plt.savefig("charge_c.png", dpi=300)
+            plt.savefig(image_path, dpi=300)
+            print(f'图片已保存至 {image_path}')
             plt.close()
 
         print('sigma:',datay[_],'\n')

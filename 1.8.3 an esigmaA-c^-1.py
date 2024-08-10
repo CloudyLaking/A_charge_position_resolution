@@ -12,6 +12,7 @@ from sklearn.metrics import r2_score
 from multiprocessing import Pool
 from numba import jit
 import matplotlib.pyplot as plt
+import os
 
 ##退火方法3D网格中求解数个电荷电势最低分布##
 
@@ -180,11 +181,17 @@ def draw_3d(xyz,i,t,pmin,last_pmin,le,n,amount,potentials,a0,b0,c0):
         ax5.set_ylabel('Potential Decrease Rate')
         ax5.set_title('Potential Decrease Rate vs Iteration')
         ax5.grid(True)
+        
+    # 获取当前文件的绝对路径
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 
+    # 生成图片的完整路径
+    image_path = os.path.join(script_dir, f'charge_anneal.png')
 
+    # 保存图片到指定路径
     plt.tight_layout()
-    plt.savefig("charge_anneal.png", dpi=300)
-    plt.close(fig)
+    plt.savefig(image_path, dpi=300)
+    plt.close()
 
     #记录个数
     data0 = len(x_values) 
@@ -313,9 +320,16 @@ def mainmain():
             info = 'Amount: {}  \na: {}  \nb: {}  \nC:{}-{}  \nMeasurement Times: {}  \nData division: {}'.format(amount, a, b, le/datatimes, le, times, 1/datatimes)
             plt.text(0.6, 0.1, info, transform=plt.gca().transAxes)
 
-            #图基本设置
+            # 获取当前文件的绝对路径
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # 生成图片的完整路径
+            image_path = os.path.join(script_dir, f'charge_c.png')
+
+            # 保存图片到指定路径
             plt.grid(True)
-            plt.savefig("charge_c.png", dpi=300)
+            plt.savefig(image_path, dpi=300)
+            print(f'图片已保存至 {image_path}')
             plt.close()
 
     print(data)
